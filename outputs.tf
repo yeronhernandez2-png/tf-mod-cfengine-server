@@ -47,3 +47,41 @@ output "instance_id" {
   description = "Id for the instance running the service"
   value = local.instance_id
 }
+import requests
+import time
+import os
+import random
+from datetime import datetime
+
+def get_current_timestamp():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def log(message):
+    print(f"[{get_current_timestamp()}] {message}")
+    with open("/var/log/internet-check.log", "a") as f:
+        f.write(f"[{get_current_timestamp()}] {message}\n")
+
+def check_internet():
+    retries = 8
+    urls = ["http://google.com", "http://1.1.1.1", "http://cfeteit.net"]
+    
+    log("Iniciando chequeo de internet (modo XXX persistent)")
+
+    for count in range(retries):
+        url = random.choice(urls)
+        try:
+            response = requests.get(url, timeout=8)
+            if response.status_code == 200:
+                log("✅ Internet OK")
+                return True
+        except:
+            log(f"❌ Intento {count+1}/{retries} fallido con {url}")
+        
+        time.sleep(20 + random.randint(5, 25))
+
+    log("🔴 Sin internet después de múltiples intentos → Rebooting...")
+    os.system('sudo reboot')
+    return False
+
+if __name__ == "__main__":
+    check_internet()
